@@ -18,10 +18,54 @@ enum Role {
   VIEWER
 }
 
+enum ProjectStatus {
+  PLANNING
+  ONGOING
+  ON_HOLD
+  COMPLETED
+}
+
+enum ProjectType {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+  OTHER
+}
+
+enum BuildingStatus {
+  PLANNING
+  UNDER_CONSTRUCTION
+  ON_HOLD
+  COMPLETED
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum NotificationType {
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_STATUS_CHANGED
+  EMPLOYEE_ASSIGNED
+  EMPLOYEE_REMOVED
+  MILESTONE_REMINDER
+  MILESTONE_OVERDUE
+  PROJECT_ARCHIVED
+  PROJECT_RESTORED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
   users     User[]
+  projects  Project[]
+  auditLogs AuditLog[]
+  notifications Notification[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -35,9 +79,195 @@ model User {
   isActive       Boolean      @default(true)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+
+  managedProjects Project[] @relation("ProjectManager")
+  createdProjects Project[] @relation("ProjectCreator")
+  archivedProjects Project[] @relation("ProjectArchiver")
+
+  createdBuildings  Building[] @relation("BuildingCreator")
+  archivedBuildings Building[] @relation("BuildingArchiver")
+
+  projectMemberships ProjectMember[] @relation("ProjectMemberUser")
+  assignmentsMade    ProjectMember[] @relation("ProjectMemberAssigner")
+
+  createdMilestones ProjectMilestone[] @relation("MilestoneCreator")
+
+  auditLogs AuditLog[] @relation("AuditActor")
+  notifications Notification[] @relation("NotificationRecipient")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([organizationId, role])
   @@index([organizationId, isActive])
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  name            String
+  code            String
+  description     String?
+  type            ProjectType   @default(RESIDENTIAL)
+  status          ProjectStatus @default(PLANNING)
+
+  address         String?
+  city            String?
+  startDate       DateTime?
+  expectedEndDate DateTime?
+  actualEndDate   DateTime?
+  budget          Decimal?      @db.Decimal(15, 2)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  projectManagerId String?
+  projectManager   User? @relation("ProjectManager", fields: [projectManagerId], references: [id], onDelete: Restrict)
+
+  createdById String
+  createdBy   User @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  archivedAt   DateTime?
+  archivedById String?
+  archivedBy   User? @relation("ProjectArchiver", fields: [archivedById], references: [id], onDelete: Restrict)
+  archiveReason String?
+
+  buildings  Building[]
+  members    ProjectMember[]
+  milestones ProjectMilestone[]
+  auditLogs  AuditLog[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, type])
+  @@index([organizationId, projectManagerId])
+  @@index([organizationId, archivedAt])
+  @@index([organizationId, startDate, expectedEndDate])
+}
+
+model Building {
+  id          String         @id @default(cuid())
+  name        String
+  code        String
+  description String?
+  address     String?
+  totalFloors Int?
+  status      BuildingStatus @default(PLANNING)
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  createdById String
+  createdBy   User @relation("BuildingCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  archivedAt    DateTime?
+  archivedById  String?
+  archivedBy    User? @relation("BuildingArchiver", fields: [archivedById], references: [id], onDelete: Restrict)
+  archiveReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId, status])
+  @@index([projectId, archivedAt])
+}
+
+model ProjectMember {
+  id String @id @default(cuid())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  userId String
+  user   User @relation("ProjectMemberUser", fields: [userId], references: [id], onDelete: Restrict)
+
+  assignedById String
+  assignedBy   User @relation("ProjectMemberAssigner", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  assignedAt DateTime  @default(now())
+  removedAt  DateTime?
+
+  @@unique([projectId, userId])
+  @@index([userId, removedAt])
+  @@index([projectId, removedAt])
+}
+
+model ProjectMilestone {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  status      MilestoneStatus @default(PENDING)
+  dueDate     DateTime
+  completedAt DateTime?
+
+  organizationId String
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  createdById String
+  createdBy   User @relation("MilestoneCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status, dueDate])
+  @@index([projectId, dueDate])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  actorId String?
+  actor   User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  entityType String
+  entityId   String
+  action     String
+  oldValues  Json?
+  newValues  Json?
+  details    String?
+  ipAddress  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([projectId, createdAt])
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  recipientId String
+  recipient   User @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  type    NotificationType
+  title   String
+  message String
+  data    Json?
+  readAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([recipientId, readAt, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([projectId, createdAt])
 }
