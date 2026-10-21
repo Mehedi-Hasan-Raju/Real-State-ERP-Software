@@ -9,6 +9,7 @@ import { allowRoles } from "./middleware/authorize.middleware";
 import employeesRoutes from "./modules/employees/employees.routes";
 import projectsRoutes from "./modules/projects/projects.routes";
 
+
 const app = express();
 
 app.disable("x-powered-by");
@@ -28,6 +29,9 @@ app.get("/api/v1/health", (_req, res) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/employees", employeesRoutes);
 app.use("/api/v1/projects", projectsRoutes);
+
+
+
 
 app.get("/api/v1/private", requireAuth, (req, res) => {
   res.json({ user: req.user });
