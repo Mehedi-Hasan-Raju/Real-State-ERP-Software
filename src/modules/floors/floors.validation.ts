@@ -5,6 +5,10 @@ export const createFloorSchema = z.object({
   floorNumber: z.number().int().min(0).max(300),
   name: z.string().trim().max(100).optional(),
   description: z.string().trim().max(1000).optional(),
+  initialUnit: z.object({
+    unitNumber: z.string().trim().min(1).max(50),
+    name: z.string().trim().max(100).optional(),
+  }).optional(),
 });
 
 export const updateFloorSchema = z

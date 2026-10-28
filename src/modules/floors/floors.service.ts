@@ -93,8 +93,9 @@ async function writeAudit(
   action: string,
   oldValues: unknown,
   newValues: unknown,
+  tx?: Prisma.TransactionClient,
 ) {
-  await prisma.auditLog.create({
+  await (tx ?? prisma).auditLog.create({
     data: {
       organizationId: actor.organizationId,
       actorId: actor.id,
@@ -140,30 +141,63 @@ export async function createFloor(input: CreateFloorInput, actor: Actor) {
     throw new FloorServiceError(404, "Building not found");
   }
 
-  const floor = await prisma.floor.create({
-    data: {
-      buildingId: building.id,
-      floorNumber: input.floorNumber,
-      name: input.name,
-      description: input.description,
-      createdById: actor.id,
-    },
+  return prisma.$transaction(async (tx) => {
+    const floor = await tx.floor.create({
+      data: {
+        buildingId: building.id,
+        floorNumber: input.floorNumber,
+        name: input.name,
+        description: input.description,
+        createdById: actor.id,
+      },
+    });
+
+    await writeAudit(
+      actor,
+      building.project.id,
+      floor.id,
+      "FLOOR_CREATED",
+      null,
+      {
+        buildingId: building.id,
+        floorNumber: floor.floorNumber,
+        name: floor.name,
+      },
+      tx,
+    );
+
+    if (input.initialUnit) {
+      const unit = await tx.unit.create({
+        data: {
+          floorId: floor.id,
+          unitNumber: input.initialUnit.unitNumber,
+          ...(input.initialUnit.name
+            ? { name: input.initialUnit.name }
+            : {}),
+          createdById: actor.id,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId: actor.organizationId,
+          actorId: actor.id,
+          projectId: building.project.id,
+          entityType: "UNIT",
+          entityId: unit.id,
+          action: "UNIT_CREATED",
+          oldValues: Prisma.JsonNull,
+          newValues: {
+            floorId: floor.id,
+            unitNumber: unit.unitNumber,
+            name: unit.name,
+          },
+        },
+      });
+    }
+
+    return floor;
   });
-
-  await writeAudit(
-    actor,
-    building.project.id,
-    floor.id,
-    "FLOOR_CREATED",
-    null,
-    {
-      buildingId: building.id,
-      floorNumber: floor.floorNumber,
-      name: floor.name,
-    },
-  );
-
-  return floor;
 }
 
 export async function listFloors(input: ListFloorsInput, actor: Actor) {
@@ -192,7 +226,7 @@ export async function listFloors(input: ListFloorsInput, actor: Actor) {
       : {}),
   };
 
-  const [items, total] = await prisma.$transaction([
+  const [items, total] = await Promise.all([
     prisma.floor.findMany({
       where,
       include: {

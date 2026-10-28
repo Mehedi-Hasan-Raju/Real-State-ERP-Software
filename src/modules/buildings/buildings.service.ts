@@ -88,30 +88,46 @@ async function getBuildingForActor(
   buildingId: string,
   includeArchived = false,
 ) {
-  const building = await prisma.building.findFirst({
-    where: {
-      id: buildingId,
-      project: { organizationId: actor.organizationId },
-      ...(includeArchived ? {} : { archivedAt: null }),
-    },
-    include: {
-      project: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          organizationId: true,
-          archivedAt: true,
+  const findBuilding = () =>
+    prisma.building.findFirst({
+      where: {
+        id: buildingId,
+        project: { organizationId: actor.organizationId },
+        ...(includeArchived ? {} : { archivedAt: null }),
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            organizationId: true,
+            archivedAt: true,
+          },
+        },
+        createdBy: {
+          select: { id: true, name: true },
+        },
+        archivedBy: {
+          select: { id: true, name: true },
         },
       },
-      createdBy: {
-        select: { id: true, name: true },
-      },
-      archivedBy: {
-        select: { id: true, name: true },
-      },
-    },
-  });
+    });
+
+  let building;
+  try {
+    building = await findBuilding();
+  } catch (error) {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== "P1017"
+    ) {
+      throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    building = await findBuilding();
+  }
 
   if (!building || building.project.archivedAt) {
     throw new BuildingServiceError(404, "Building not found");

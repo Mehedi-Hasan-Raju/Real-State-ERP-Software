@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -49,6 +48,7 @@ app.use("/api/v1/payments", paymentsRoutes);
 app.use("/api/v1/finance-reports", financeReportsRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/notifications", notificationsRoutes);
+
 
 app.get("/api/v1/private", requireAuth, (req, res) => {
   res.json({ user: req.user });

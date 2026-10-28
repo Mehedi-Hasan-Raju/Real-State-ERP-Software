@@ -8,7 +8,7 @@ export const createEmployeeSchema = z.object({
     .email()
     .max(254)
     .transform((value) => value.toLowerCase()),
-  password: z.string().min(12).max(128),
+  password: z.string().min(8).max(128),
   role: z.enum([
     "ADMIN",
     "MANAGER",

@@ -76,13 +76,14 @@ async function ensureProjectManager(
       id: userId,
       organizationId,
       isActive: true,
+      role: "MANAGER",
     },
     select: { id: true },
   });
 
   if (!user) {
     throw new ProjectServiceError(
-      "Project manager was not found in your organization or is inactive",
+      "Project manager must be an active Manager in your organization",
       400,
     );
   }
@@ -236,7 +237,7 @@ export const projectsService = {
       };
     }
 
-    const [projects, total] = await prisma.$transaction([
+    const [projects, total] = await Promise.all([
       prisma.project.findMany({
         where,
         select: projectSelect,
