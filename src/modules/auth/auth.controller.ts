@@ -17,14 +17,14 @@ const cookieOptions = {
 function setSessionCookie(res: Response, userId: string) {
   const token = jwt.sign({}, env.JWT_SECRET, {
     subject: userId,
-    expiresIn: "15m",
+    expiresIn: "7d",
     issuer: "estateflow-api",
     audience: "estateflow-web",
   });
 
   res.cookie(cookieName, token, {
     ...cookieOptions,
-    maxAge: 15 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 

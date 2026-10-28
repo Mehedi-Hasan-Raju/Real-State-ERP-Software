@@ -210,7 +210,7 @@ export const projectMembersService = {
             organizationId: actor.organizationId,
             recipientId: userId,
             projectId,
-            type: "PROJECT_UPDATED",
+            type: "EMPLOYEE_ASSIGNED",
             title: "New project assignment",
             message: `You have been assigned to project "${project.name}".`,
             data: { projectId },
@@ -284,7 +284,30 @@ export const projectMembersService = {
         { removedAt: null },
         { removedAt: removedAt.toISOString() },
       );
+      const project = await tx.project.findFirst({
+  where: {
+    id: projectId,
+    organizationId: actor.organizationId,
+  },
+  select: {
+    id: true,
+    name: true,
+  },
+});
 
+if (project) {
+  await tx.notification.create({
+    data: {
+      organizationId: actor.organizationId,
+      recipientId: userId,
+      projectId: project.id,
+      type: "EMPLOYEE_REMOVED",
+      title: "Project assignment removed",
+      message: `You have been removed from project "${project.name}".`,
+      data: { projectId: project.id },
+    },
+  });
+}
       return updated;
     });
   },

@@ -413,6 +413,29 @@ export const projectsService = {
         newValues: toAuditJson(archived),
         details: reason,
       });
+      
+     const recipients = await tx.user.findMany({
+  where: {
+    organizationId: actor.organizationId,
+    isActive: true,
+    id: { not: actor.id },
+  },
+  select: { id: true },
+});
+
+if (recipients.length > 0) {
+  await tx.notification.createMany({
+    data: recipients.map((recipient) => ({
+      organizationId: actor.organizationId,
+      recipientId: recipient.id,
+      projectId: current.id,
+      type: "PROJECT_ARCHIVED",
+      title: "Project archived",
+      message: `Project "${current.name}" has been archived.`,
+      data: { projectId: current.id },
+    })),
+  });
+}
 
       return archived;
     });
@@ -454,6 +477,30 @@ export const projectsService = {
         oldValues: toAuditJson(current),
         newValues: toAuditJson(restored),
       });
+     
+     const recipients = await tx.user.findMany({
+  where: {
+    organizationId: actor.organizationId,
+    isActive: true,
+    id: { not: actor.id },
+  },
+  select: { id: true },
+});
+
+if (recipients.length > 0) {
+  await tx.notification.createMany({
+    data: recipients.map((recipient) => ({
+      organizationId: actor.organizationId,
+      recipientId: recipient.id,
+      projectId: restored.id,
+      type: "PROJECT_RESTORED",
+      title: "Project restored",
+      message: `Project "${restored.name}" has been restored.`,
+      data: { projectId: restored.id },
+    })),
+  });
+}
+
 
       return restored;
     });
