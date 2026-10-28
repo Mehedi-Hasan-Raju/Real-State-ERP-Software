@@ -70,6 +70,13 @@ enum FloorStatus {
   INACTIVE
 }
 
+enum BookingStatus {
+  RESERVED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -78,6 +85,7 @@ model Organization {
   auditLogs AuditLog[]
   notifications Notification[]
   customers Customer[]
+  bookings Booking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,6 +124,8 @@ model User {
 
   auditLogs AuditLog[] @relation("AuditActor")
   notifications Notification[] @relation("NotificationRecipient")
+
+  createdBookings Booking[] @relation("BookingCreator")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -243,6 +253,7 @@ model Unit {
 
   createdById String
   createdBy   User @relation("UnitCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  bookings Booking[]
 
   archivedAt    DateTime?
   archivedById  String?
@@ -373,6 +384,7 @@ model Customer {
   archivedById  String?
   archivedBy    User? @relation("CustomerArchiver",fields: [archivedById],references: [id],onDelete: Restrict)
   archiveReason String?
+  bookings Booking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -381,4 +393,42 @@ model Customer {
   @@index([organizationId, phone])
   @@index([organizationId, email])
   @@index([organizationId, archivedAt])
+}
+
+
+model Booking {
+  id              String        @id @default(cuid())
+  bookingCode     String
+  status          BookingStatus @default(RESERVED)
+
+  bookingDate     DateTime      @default(now())
+  agreedPrice     Decimal       @db.Decimal(15, 2)
+  bookingAmount   Decimal       @default(0) @db.Decimal(15, 2)
+  notes           String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id],onDelete: Restrict)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId],references: [id],onDelete: Restrict)
+
+  unitId String
+  unit   Unit @relation( fields: [unitId], references: [id],onDelete: Restrict)
+
+  createdById String
+  createdBy   User @relation("BookingCreator",fields: [createdById],references: [id], onDelete: Restrict)
+
+  cancelledAt     DateTime?
+  cancelledById   String?
+  cancellationReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, bookingCode])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, customerId])
+  @@index([organizationId, unitId, status])
+  @@index([customerId, createdAt])
+  @@index([unitId, createdAt])
 }

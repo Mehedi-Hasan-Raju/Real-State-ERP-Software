@@ -12,7 +12,7 @@ import buildingsRoutes from "./modules/buildings/buildings.routes";
 import floorsRoutes from "./modules/floors/floors.routes";
 import unitsRoutes from "./modules/units/units.routes";
 import customersRoutes from "./modules/customers/customers.routes";
-
+import bookingsRoutes from "./modules/bookings/bookings.routes";
 
 const app = express();
 
@@ -37,7 +37,7 @@ app.use("/api/v1/buildings", buildingsRoutes);
 app.use("/api/v1/floors", floorsRoutes);
 app.use("/api/v1/units", unitsRoutes);
 app.use("/api/v1/customers", customersRoutes);
-
+app.use("/api/v1/bookings", bookingsRoutes);
 
 app.get("/api/v1/private", requireAuth, (req, res) => {
   res.json({ user: req.user });
