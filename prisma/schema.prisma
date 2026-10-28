@@ -58,6 +58,18 @@ enum NotificationType {
   PROJECT_RESTORED
 }
 
+enum UnitStatus {
+  AVAILABLE
+  RESERVED
+  BOOKED
+  SOLD
+}
+
+enum FloorStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -86,6 +98,12 @@ model User {
 
   createdBuildings  Building[] @relation("BuildingCreator")
   archivedBuildings Building[] @relation("BuildingArchiver")
+
+  createdFloors  Floor[] @relation("FloorCreator")
+  archivedFloors Floor[] @relation("FloorArchiver")
+
+  createdUnits  Unit[] @relation("UnitCreator")
+  archivedUnits Unit[] @relation("UnitArchiver")
 
   projectMemberships ProjectMember[] @relation("ProjectMemberUser")
   assignmentsMade    ProjectMember[] @relation("ProjectMemberAssigner")
@@ -162,7 +180,8 @@ model Building {
 
   createdById String
   createdBy   User @relation("BuildingCreator", fields: [createdById], references: [id], onDelete: Restrict)
-
+ 
+  floors Floor[]
   archivedAt    DateTime?
   archivedById  String?
   archivedBy    User? @relation("BuildingArchiver", fields: [archivedById], references: [id], onDelete: Restrict)
@@ -175,6 +194,65 @@ model Building {
   @@index([projectId, status])
   @@index([projectId, archivedAt])
 }
+
+model Floor {
+  id          String      @id @default(cuid())
+  floorNumber Int
+  name        String?
+  description String?
+  status      FloorStatus @default(ACTIVE)
+
+  buildingId String
+  building   Building @relation(fields: [buildingId], references: [id], onDelete: Restrict)
+
+  createdById String
+  createdBy   User @relation("FloorCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  archivedAt    DateTime?
+  archivedById  String?
+  archivedBy    User? @relation("FloorArchiver", fields: [archivedById], references: [id], onDelete: Restrict)
+  archiveReason String?
+
+  units Unit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([buildingId, floorNumber])
+  @@index([buildingId, status])
+  @@index([buildingId, archivedAt])
+}
+
+model Unit {
+  id          String     @id @default(cuid())
+  unitNumber  String
+  name        String?
+  description String?
+  area        Decimal?   @db.Decimal(10, 2)
+  bedrooms    Int?
+  bathrooms   Int?
+  price       Decimal?   @db.Decimal(15, 2)
+  status      UnitStatus @default(AVAILABLE)
+
+  floorId String
+  floor   Floor @relation(fields: [floorId], references: [id], onDelete: Restrict)
+
+  createdById String
+  createdBy   User @relation("UnitCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  archivedAt    DateTime?
+  archivedById  String?
+  archivedBy    User? @relation("UnitArchiver", fields: [archivedById], references: [id], onDelete: Restrict)
+  archiveReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([floorId, unitNumber])
+  @@index([floorId, status])
+  @@index([floorId, archivedAt])
+}
+
 
 model ProjectMember {
   id String @id @default(cuid())

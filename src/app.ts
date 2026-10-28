@@ -9,6 +9,8 @@ import { allowRoles } from "./middleware/authorize.middleware";
 import employeesRoutes from "./modules/employees/employees.routes";
 import projectsRoutes from "./modules/projects/projects.routes";
 import buildingsRoutes from "./modules/buildings/buildings.routes";
+import floorsRoutes from "./modules/floors/floors.routes";
+import unitsRoutes from "./modules/units/units.routes";
 
 const app = express();
 
@@ -30,8 +32,8 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/employees", employeesRoutes);
 app.use("/api/v1/projects", projectsRoutes);
 app.use("/api/v1/buildings", buildingsRoutes);
-
-
+app.use("/api/v1/floors", floorsRoutes);
+app.use("/api/v1/units", unitsRoutes);
 
 app.get("/api/v1/private", requireAuth, (req, res) => {
   res.json({ user: req.user });
