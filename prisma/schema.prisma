@@ -77,6 +77,21 @@ enum BookingStatus {
   COMPLETED
 }
 
+enum InstallmentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  ONLINE
+  OTHER
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -86,6 +101,8 @@ model Organization {
   notifications Notification[]
   customers Customer[]
   bookings Booking[]
+  installments Installment[]
+  payments     Payment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -126,6 +143,9 @@ model User {
   notifications Notification[] @relation("NotificationRecipient")
 
   createdBookings Booking[] @relation("BookingCreator")
+
+  createdInstallments Installment[] @relation("InstallmentCreator")
+  receivedPayments    Payment[]     @relation("PaymentReceiver")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -421,6 +441,9 @@ model Booking {
   cancelledAt     DateTime?
   cancelledById   String?
   cancellationReason String?
+  
+  installments Installment[]
+  payments     Payment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -431,4 +454,63 @@ model Booking {
   @@index([organizationId, unitId, status])
   @@index([customerId, createdAt])
   @@index([unitId, createdAt])
+}
+
+model Installment {
+  id             String            @id @default(cuid())
+  installmentNo  Int
+  title          String
+  amount         Decimal           @db.Decimal(15, 2)
+  dueDate        DateTime
+  status         InstallmentStatus @default(PENDING)
+  notes          String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation( fields: [bookingId],references: [id],onDelete: Restrict )
+
+  createdById String
+  createdBy   User @relation("InstallmentCreator", fields: [createdById],references: [id],onDelete: Restrict)
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bookingId, installmentNo])
+  @@index([organizationId, status, dueDate])
+  @@index([organizationId, bookingId])
+  @@index([bookingId, dueDate])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  paymentCode   String
+  amount        Decimal       @db.Decimal(15, 2)
+  paymentDate   DateTime      @default(now())
+  method        PaymentMethod
+  reference     String?
+  notes         String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId],references: [id],onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation( fields: [bookingId],references: [id],onDelete: Restrict)
+
+  installmentId String
+  installment   Installment @relation(fields: [installmentId],references: [id],onDelete: Restrict)
+
+  receivedById String
+  receivedBy   User @relation("PaymentReceiver",fields: [receivedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, paymentCode])
+  @@index([organizationId, paymentDate])
+  @@index([organizationId, bookingId])
+  @@index([installmentId, paymentDate])
 }
