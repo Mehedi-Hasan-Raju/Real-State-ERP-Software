@@ -20,7 +20,7 @@ export const updateUnitSchema = z
     bedrooms: z.number().int().min(0).max(50).nullable().optional(),
     bathrooms: z.number().int().min(0).max(50).nullable().optional(),
     price: z.coerce.number().positive().max(1_000_000_000_000).nullable().optional(),
-    status: z.enum(["AVAILABLE", "RESERVED", "BOOKED", "SOLD"]).optional(),
+    
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field is required",
