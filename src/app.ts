@@ -16,7 +16,7 @@ import bookingsRoutes from "./modules/bookings/bookings.routes";
 import installmentsRoutes from "./modules/installments/installments.routes";
 import paymentsRoutes from "./modules/payments/payments.routes";
 import financeReportsRoutes from "./modules/finance-reports/finance-reports.routes";
-
+import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 
 const app = express();
 
@@ -45,7 +45,7 @@ app.use("/api/v1/bookings", bookingsRoutes);
 app.use("/api/v1/installments", installmentsRoutes);
 app.use("/api/v1/payments", paymentsRoutes);
 app.use("/api/v1/finance-reports", financeReportsRoutes);
-
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 
 app.get("/api/v1/private", requireAuth, (req, res) => {
