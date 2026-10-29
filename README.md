@@ -12,7 +12,7 @@ The backend follows a modular architecture with separate routes, controllers, se
 ---
 ## 📸 Project Preview
 
-<img src="./images/diagram (5).png" alt="German Learning Platform" width="900"/>
+<img src="./images/diagram(5).png" alt="German Learning Platform" width="900"/>
 ---
 
 ### Key Features
