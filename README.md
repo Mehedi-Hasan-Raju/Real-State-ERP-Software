@@ -9,6 +9,12 @@ EstateFlow ERP is a backend application designed for real estate developers to m
 
 The backend follows a modular architecture with separate routes, controllers, services, and validation schemas. It uses PostgreSQL for data storage and Prisma ORM for database access.
 
+---
+## 📸 Project Preview
+
+<img src="./images/diagram (5).png" alt="German Learning Platform" width="900"/>
+---
+
 ### Key Features
 
 - Authentication and role-based authorization
