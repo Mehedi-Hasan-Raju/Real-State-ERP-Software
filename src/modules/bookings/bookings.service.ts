@@ -268,7 +268,7 @@ export const BookingsService = {
           return booking;
         },
         {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
         }
       );
     } catch (error) {
@@ -284,7 +284,7 @@ export const BookingsService = {
 
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034"
+        (error.code === "P2034" || error.code === "P2028")
       ) {
         throw new BookingServiceError(
           "A concurrent booking operation occurred. Please retry",
@@ -549,13 +549,13 @@ export const BookingsService = {
           return updated;
         },
         {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
         }
       );
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034"
+        (error.code === "P2034" || error.code === "P2028")
       ) {
         throw new BookingServiceError(
           "A concurrent booking operation occurred. Please retry",

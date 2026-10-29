@@ -57,7 +57,7 @@ export const authService = {
           });
         },
         {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
           maxWait: 10_000,
         },
       );
@@ -79,7 +79,7 @@ export const authService = {
       // Concurrent setup requests must not create multiple organizations.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034"
+        (error.code === "P2034" || error.code === "P2028")
       ) {
         throw new AuthServiceError(
           "Setup is being completed or has already been completed. Please try again.",

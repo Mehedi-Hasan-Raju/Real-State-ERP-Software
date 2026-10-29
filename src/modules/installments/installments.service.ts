@@ -202,7 +202,7 @@ export const InstallmentsService = {
           return installment;
         },
         {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
         }
       );
     } catch (error) {
@@ -218,7 +218,7 @@ export const InstallmentsService = {
 
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034"
+        (error.code === "P2034" || error.code === "P2028")
       ) {
         throw new FinanceServiceError(
           "Concurrent finance update detected. Please retry",

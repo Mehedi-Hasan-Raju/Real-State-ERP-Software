@@ -226,7 +226,7 @@ export const PaymentsService = {
           };
         },
         {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
         }
       );
     } catch (error) {
@@ -242,7 +242,7 @@ export const PaymentsService = {
 
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034"
+        (error.code === "P2034" || error.code === "P2028")
       ) {
         throw new FinanceServiceError(
           "Concurrent payment update detected. Please retry",
